@@ -25,7 +25,7 @@ model:
     n_heads: 8
 
 data:
-    root_dir: data/shuffled
+    root_dir: ./data/shuffled
     sources:
         dclm_baseline_1.0: 1.0
     batch_size: 32
@@ -34,6 +34,7 @@ data:
     n_views: 2
     load_async: true
     tokenizer:
+        path: /tmp/llama3_tokenizer
         name: bytes
 
 profiling:
