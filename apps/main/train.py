@@ -191,6 +191,10 @@ def validate_train_args(args: TrainArgs, output_size: int):
     if args.logging.wandb is not None:
         args.logging.wandb.name = args.name
 
+    if args.logging.mlflow is not None:
+        if args.logging.mlflow.run_name is None:
+            args.logging.mlflow.run_name = args.name
+
     if args.probe_freq is not None:
         assert (
             args.distributed.tp_size == 1
@@ -566,6 +570,8 @@ def train(args: TrainArgs):
                 elif get_is_master():
                     if wandb.run is not None and args.logging.wandb is not None:
                         eval_args.wandb = deepcopy(args.logging.wandb)
+                    if args.logging.mlflow is not None:
+                        eval_args.mlflow = deepcopy(args.logging.mlflow)
                     assert args.async_eval_gpus > 0
                     logger.info(f"Launching evals on {args.async_eval_gpus} gpus")
                     with clean_env():
