@@ -17,7 +17,7 @@ code_source:
     repo_path: /Users/lin.yuan/work/lingua-databricks
 command: |-
   # Set launch path for torchrun
-  cd $HOME/lingua
+  cd $HOME/lingua-databricks
   pip install -r requirements.txt
 
   # Optional: download the data to disk
