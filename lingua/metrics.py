@@ -53,6 +53,8 @@ class WandbArgs:
 @dataclass
 class MLflowArgs:
     """Configuration for MLflow experiment tracking."""
+    enabled: bool = True  # Enable/disable MLflow logging
+    
     # Experiment settings
     experiment_name: Optional[str] = None  # Name of the experiment (will be created if doesn't exist)
     run_name: Optional[str] = None  # Name of this specific run
@@ -158,10 +160,11 @@ class MetricLogger:
                 **asdict(self.args.logging.wandb),
             )
         
-        # Initialize MLflow if configured
+        # Initialize MLflow if configured and enabled
         if (
             self.args is not None
             and self.args.logging.mlflow is not None
+            and self.args.logging.mlflow.enabled
             and get_is_master()
         ):
             self._init_mlflow()
@@ -178,6 +181,7 @@ class MetricLogger:
         if (
             self.args is not None
             and self.args.logging.mlflow is not None
+            and self.args.logging.mlflow.enabled
             and MLFLOW_AVAILABLE
             and self._mlflow_run is not None
         ):
