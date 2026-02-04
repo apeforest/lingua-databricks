@@ -80,6 +80,7 @@ class EvalArgs:
     validation: Optional[ValidationArgs] = field(default_factory=ValidationArgs)
 
     wandb: Optional[Any] = None
+    mlflow: Optional[Any] = None  # MLflow configuration for async eval
 
     global_step: Optional[int] = None  # for in-training evaluation
 

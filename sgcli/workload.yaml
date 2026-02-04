@@ -1,0 +1,32 @@
+experiment_name: lingua-sgc
+run_name: lingua-debug-run
+environment:
+  env_variables:
+    NCCL_DEBUG: "INFO"
+  dependencies: requirements.yaml
+  env_variables_secrets:   
+    HF_TOKEN: "sgc-nightly-notebook/hf_token" # change this to your own hugging face token
+compute:
+  gpus: 8
+  gpu_type: h100
+max_retries: 0
+code_source:
+  type: snapshot
+  snapshot:
+    git_branch: sgc
+    repo_path: /Users/lin.yuan/work/lingua-databricks
+command: |-
+  # Set launch path for torchrun
+  cd $HOME/lingua-databricks
+  pip install -r requirements.txt
+
+  # Optional: download the data to disk
+  # python setup/download_prepare_hf_data.py fineweb_edu 16 --data_dir /tmp/data --seed 42 --nchunks 32 
+
+  torchrun \
+    --nnodes=1 \
+    --nproc_per_node=8 \
+    --node_rank=$NODE_RANK \
+    --master_addr=$MASTER_ADDR \
+    --master_port=$MASTER_PORT \
+    -m apps.main.train config=apps/main/configs/debug.yaml

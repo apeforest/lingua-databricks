@@ -41,8 +41,9 @@ profiling:
     run: true
 
 checkpoint:
+    path: /Volumes/main/linyuan/checkpoints/lingua/debug-demo/
     dump:
-        every: 2
+        every: 100
         keep: 100
     eval:
         every: 100
@@ -50,6 +51,10 @@ checkpoint:
 
 logging:
     freq: 10
+    mlflow:
+        enabled: true
+        tracking_uri: "databricks"  # defaults to ./mlruns
+        run_name: "lingua_debug"
 
 # eval:
 #     generator:

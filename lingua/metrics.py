@@ -15,6 +15,12 @@ import torch.nn as nn
 from lingua.distributed import get_is_master
 import wandb
 
+try:
+    import mlflow
+    MLFLOW_AVAILABLE = True
+except ImportError:
+    MLFLOW_AVAILABLE = False
+
 logger = logging.getLogger()
 
 
@@ -45,11 +51,36 @@ class WandbArgs:
 
 
 @dataclass
+class MLflowArgs:
+    """Configuration for MLflow experiment tracking."""
+    enabled: bool = True  # Enable/disable MLflow logging
+    
+    # Experiment settings
+    experiment_name: Optional[str] = None  # Name of the experiment (will be created if doesn't exist)
+    run_name: Optional[str] = None  # Name of this specific run
+    run_id: Optional[str] = None  # Resume a specific run by ID
+    
+    # Tracking server settings
+    tracking_uri: Optional[str] = None  # MLflow tracking server URI (e.g., "databricks" or "http://localhost:5000")
+    artifact_location: Optional[str] = None  # Custom artifact storage location
+    
+    # Run metadata
+    tags: Optional[Dict[str, str]] = None  # Tags to attach to the run
+    description: Optional[str] = None  # Run description
+    
+    # Logging options
+    log_system_metrics: bool = True  # Log system metrics (CPU, memory, etc.)
+    log_model_params: bool = True  # Log model parameters count as metric
+    nested: bool = False  # Create nested run under active run
+
+
+@dataclass
 class LoggingArgs:
     freq: int = 10  # Log every freq optimizer steps
     acc_freq: Optional[int] = None  # Log every acc_freq gradient accumulation steps
 
     wandb: Optional[WandbArgs] = None
+    mlflow: Optional[MLflowArgs] = None
 
 
 class MetricLogger:
@@ -57,10 +88,68 @@ class MetricLogger:
         self.outdir = outdir
         self.jsonl_writer = None
         self.args = args
+        self._mlflow_run = None
+
+    def _init_mlflow(self):
+        """Initialize MLflow tracking if configured."""
+        if not MLFLOW_AVAILABLE:
+            logger.warning("MLflow is not installed. Install with: pip install mlflow")
+            return
+        
+        mlflow_args = self.args.logging.mlflow
+        
+        # Set tracking URI if provided
+        if mlflow_args.tracking_uri:
+            mlflow.set_tracking_uri(mlflow_args.tracking_uri)
+        
+        # Set or create experiment
+        if mlflow_args.experiment_name:
+            mlflow.set_experiment(mlflow_args.experiment_name)
+        
+        # Prepare run kwargs
+        run_kwargs = {}
+        if mlflow_args.run_name:
+            run_kwargs["run_name"] = mlflow_args.run_name
+        if mlflow_args.run_id:
+            run_kwargs["run_id"] = mlflow_args.run_id
+        if mlflow_args.tags:
+            run_kwargs["tags"] = mlflow_args.tags
+        if mlflow_args.description:
+            run_kwargs["description"] = mlflow_args.description
+        if mlflow_args.nested:
+            run_kwargs["nested"] = mlflow_args.nested
+        if mlflow_args.log_system_metrics:
+            run_kwargs["log_system_metrics"] = mlflow_args.log_system_metrics
+        
+        # Start run
+        self._mlflow_run = mlflow.start_run(**run_kwargs)
+        
+        # Log configuration as params
+        config_dict = asdict(self.args)
+        flat_config = _flatten_config_for_mlflow(config_dict)
+        
+        # MLflow has a limit on param value length, so we truncate long values
+        truncated_config = {}
+        for k, v in flat_config.items():
+            str_v = str(v)
+            if len(str_v) > 500:
+                str_v = str_v[:497] + "..."
+            truncated_config[k] = str_v
+        
+        # Log params in batches (MLflow has limits on batch size)
+        param_items = list(truncated_config.items())
+        batch_size = 100
+        for i in range(0, len(param_items), batch_size):
+            batch = dict(param_items[i:i + batch_size])
+            mlflow.log_params(batch)
+        
+        logger.info(f"MLflow run started: {self._mlflow_run.info.run_id}")
 
     def open(self):
         if self.jsonl_writer is None:
             self.jsonl_writer = open(self.outdir, "a")
+        
+        # Initialize wandb if configured
         if (
             self.args is not None
             and self.args.logging.wandb is not None
@@ -70,6 +159,15 @@ class MetricLogger:
                 config=asdict(self.args),
                 **asdict(self.args.logging.wandb),
             )
+        
+        # Initialize MLflow if configured and enabled
+        if (
+            self.args is not None
+            and self.args.logging.mlflow is not None
+            and self.args.logging.mlflow.enabled
+            and get_is_master()
+        ):
+            self._init_mlflow()
 
     def log(self, metrics: Dict[str, Any]):
         if (
@@ -78,6 +176,25 @@ class MetricLogger:
             and (wandb.run is not None)
         ):
             wandb.log(metrics, step=metrics["global_step"])
+        
+        # Log to MLflow
+        if (
+            self.args is not None
+            and self.args.logging.mlflow is not None
+            and self.args.logging.mlflow.enabled
+            and MLFLOW_AVAILABLE
+            and self._mlflow_run is not None
+        ):
+            # Filter out non-numeric values and flatten nested metrics
+            mlflow_metrics = {}
+            for k, v in metrics.items():
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    # MLflow metric names can't have certain characters
+                    safe_key = k.replace("/", ".").replace(" ", "_")
+                    mlflow_metrics[safe_key] = v
+            
+            if mlflow_metrics:
+                mlflow.log_metrics(mlflow_metrics, step=metrics["global_step"])
 
         metrics.update({"created_at": datetime.now(timezone.utc).isoformat()})
         print(json.dumps(metrics), file=self.jsonl_writer, flush=True)
@@ -86,6 +203,11 @@ class MetricLogger:
         if self.jsonl_writer is not None:
             self.jsonl_writer.close()
             self.jsonl_writer = None
+        
+        # End MLflow run
+        if self._mlflow_run is not None and MLFLOW_AVAILABLE:
+            mlflow.end_run()
+            self._mlflow_run = None
 
     def __enter__(self):
         self.open()
@@ -96,6 +218,21 @@ class MetricLogger:
 
     def __del__(self):
         self.close()
+
+
+def _flatten_config_for_mlflow(d: Dict, parent_key: str = "", sep: str = ".") -> Dict[str, Any]:
+    """Flatten a nested dictionary for MLflow param logging."""
+    items = []
+    for k, v in d.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, dict):
+            items.extend(_flatten_config_for_mlflow(v, new_key, sep=sep).items())
+        elif isinstance(v, list):
+            # Convert lists to string representation
+            items.append((new_key, str(v)))
+        elif v is not None:
+            items.append((new_key, v))
+    return dict(items)
 
 
 GPUMemStats = namedtuple(
