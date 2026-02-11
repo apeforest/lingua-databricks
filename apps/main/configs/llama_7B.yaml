@@ -3,7 +3,7 @@ dump_dir: /tmp/lingua_llama_7B
 name: "7b_baseline"
 steps: 100_000
 grad_acc_steps: 1
-probe_freq: 100
+probe_freq: null
 
 seed: 777
 optim:
