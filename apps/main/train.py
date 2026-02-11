@@ -433,8 +433,11 @@ def train(args: TrainArgs):
             # optimizer step
             grad_norm = -1.0
             if train_state.acc_step == 0:
+                # Use foreach=False to avoid DTensor redistribution issues
+                # with certain PyTorch/FSDP2 versions where the process group
+                # name is not properly registered for functional collectives.
                 grad_norm = torch.nn.utils.clip_grad_norm_(
-                    model.parameters(), max_norm=args.optim.clip, foreach=True
+                    model.parameters(), max_norm=args.optim.clip, foreach=False
                 )
 
                 grad_norm = (
