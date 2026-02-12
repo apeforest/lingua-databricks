@@ -1,17 +1,18 @@
 # Template config, need to change dump_dir, data.root_dir and data.tokenizer.path
 dump_dir: /tmp/lingua_llama_1B
 name: "debug_llama_1b"
-steps: 1000000
+steps: 100000
 grad_acc_steps: 4
 probe_freq: null
 seed: 777
 
 optim:
-  lr: 3e-4
+  lr: 1e-5
   weight_decay: 0.033
-  warmup: 5000
-  lr_min_ratio: 0.000001
+  warmup: 1000
+  lr_min_ratio: 1.0 
   clip: 1.0
+  scheduler: linear
 
 distributed:
     # fsdp_type: full_shard
@@ -21,11 +22,20 @@ distributed:
     matmul_allow_tf32: false
     selective_activation_checkpointing: false
     tp_size: 1
+    pg_timeout_sec: 3600
 
 model:
     dim: 2048
-    n_layers: 25
-    n_heads: 16
+    ffn_dim_multiplier: 1.5
+    multiple_of: 256
+    n_heads: 32
+    n_kv_heads: 8
+    n_layers: 16
+    norm_eps: 1e-5
+    rope_theta: 500000.0
+    # dim: 2048
+    # n_layers: 25
+    # n_heads: 16
 
 data:
     # root_dir: data/shuffled
@@ -48,7 +58,7 @@ profiling:
   profile_steps: 4
 
 checkpoint:
-  path: /Volumes/main/linyuan/checkpoints/lingua/llama_1B/
+  path: /Volumes/main/linyuan/checkpoints/lingua/llama_1B_tubi/
   dump:
     every: 100
     keep: -1
