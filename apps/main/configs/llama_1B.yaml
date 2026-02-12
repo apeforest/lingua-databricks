@@ -15,10 +15,9 @@ optim:
   scheduler: linear
 
 distributed:
-    # fsdp_type: full_shard
     fsdp_type: no_shard
     compile: true
-    model_dtype: fp32
+    model_dtype: bf16
     matmul_allow_tf32: false
     selective_activation_checkpointing: false
     tp_size: 1
@@ -29,7 +28,7 @@ model:
     multiple_of: 256
     n_heads: 32
     n_kv_heads: 8
-    n_layers: 16
+    n_layers: 32
     norm_eps: 1e-5
     rope_theta: 500000.0
     # dim: 2048
