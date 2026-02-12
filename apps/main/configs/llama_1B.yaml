@@ -22,7 +22,6 @@ distributed:
     matmul_allow_tf32: false
     selective_activation_checkpointing: false
     tp_size: 1
-    pg_timeout_sec: 3600
 
 model:
     dim: 2048
