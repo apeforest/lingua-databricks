@@ -67,7 +67,11 @@ checkpoint:
     keep: 3
 
 logging:
-    freq: 10
+    freq: 100
+    mlflow:
+        enabled: true
+        tracking_uri: "databricks"  # defaults to ./mlruns
+        run_name: "lingua_llama_1B_tubi"
 
 # eval:
 #     generator:
