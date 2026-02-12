@@ -433,9 +433,13 @@ def train(args: TrainArgs):
             # optimizer step
             grad_norm = -1.0
             if train_state.acc_step == 0:
-                # Use FSDP2's clip_grad_norm_ which handles DTensor process
-                # groups correctly (unlike torch.nn.utils.clip_grad_norm_)
-                grad_norm = model.clip_grad_norm_(args.optim.clip).item()
+                grad_norm = torch.nn.utils.clip_grad_norm_(
+                    model.parameters(), max_norm=args.optim.clip, foreach=True
+                )
+
+                grad_norm = (
+                    grad_norm.full_tensor() if isinstance(grad_norm, DTensor) else grad_norm
+                ).item()
 
                 optimizer.step()
                 scheduler.step()
