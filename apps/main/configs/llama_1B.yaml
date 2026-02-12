@@ -28,7 +28,7 @@ model:
     multiple_of: 256
     n_heads: 32
     n_kv_heads: 8
-    n_layers: 48
+    n_layers: 40
     norm_eps: 1e-5
     rope_theta: 500000.0
     # dim: 2048
