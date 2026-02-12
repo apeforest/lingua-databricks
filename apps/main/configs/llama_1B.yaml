@@ -50,10 +50,10 @@ profiling:
 checkpoint:
   path: /Volumes/main/linyuan/checkpoints/lingua/llama_1B/
   dump:
-    every: 1000
-    keep: 3
+    every: 100
+    keep: -1
   eval:
-    every: 1000
+    every: 100
     keep: 3
 
 logging:
