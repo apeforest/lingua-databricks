@@ -1,5 +1,5 @@
 # Template config, need to change dump_dir, data.root_dir and data.tokenizer.path
-dump_dir: /tmp/lingua_llama_1B
+dump_dir: /tmp/lingua_llama_3B
 name: "debug_llama_1b"
 steps: 100000
 grad_acc_steps: 4
@@ -28,7 +28,7 @@ model:
     multiple_of: 256
     n_heads: 32
     n_kv_heads: 8
-    n_layers: 32
+    n_layers: 48
     norm_eps: 1e-5
     rope_theta: 500000.0
     # dim: 2048
@@ -56,7 +56,7 @@ profiling:
   profile_steps: 4
 
 checkpoint:
-  path: /Volumes/main/linyuan/checkpoints/lingua/llama_2B_tubi/
+  path: /Volumes/main/linyuan/checkpoints/lingua/llama_3B_tubi/
   dump:
     every: 100
     keep: -1
@@ -69,7 +69,7 @@ logging:
     mlflow:
         enabled: true
         tracking_uri: "databricks"  # defaults to ./mlruns
-        run_name: "lingua_llama_1B_tubi"
+        run_name: "lingua_llama_3B_tubi"
 
 # eval:
 #     generator:
