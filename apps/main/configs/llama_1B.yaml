@@ -56,7 +56,7 @@ profiling:
   profile_steps: 4
 
 checkpoint:
-  path: /Volumes/main/linyuan/checkpoints/lingua/llama_1B_tubi/
+  path: /Volumes/main/linyuan/checkpoints/lingua/llama_2B_tubi/
   dump:
     every: 100
     keep: -1
