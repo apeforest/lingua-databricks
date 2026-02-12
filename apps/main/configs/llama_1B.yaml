@@ -1,41 +1,44 @@
+# Template config, need to change dump_dir, data.root_dir and data.tokenizer.path
 dump_dir: /tmp/lingua_llama_1B
-name: large_lm
-steps: 60_000
+name: "debug_llama_1b"
+steps: 1000000
+grad_acc_steps: 4
 probe_freq: null
 seed: 777
 
 optim:
-  lr: 3e-3
+  lr: 3e-4
   weight_decay: 0.033
   warmup: 5000
   lr_min_ratio: 0.000001
   clip: 1.0
 
 distributed:
-  fsdp_type: full_shard
-  compile: true
-  model_dtype: bf16
-  matmul_allow_tf32: false
-  selective_activation_checkpointing: false
-  tp_size: 1
+    # fsdp_type: full_shard
+    fsdp_type: no_shard
+    compile: true
+    model_dtype: bf16
+    matmul_allow_tf32: false
+    selective_activation_checkpointing: false
+    tp_size: 1
 
 model:
-  dim: 2048
-  n_layers: 25
-  n_heads: 16
+    dim: 2048
+    n_layers: 25
+    n_heads: 16
 
 data:
-  # root_dir: data/shuffled
-  root_dir: /Volumes/main/rohitkg/data/raw_data/lingua_train_data
-  sources:
-      fineweb_edu_10bt: 100.0
-  batch_size: 4
-  prefetch_size: 32
-  seq_len: 1024
-  n_views: 2
-  load_async: true
-  tokenizer:
-      name: bytes
+    # root_dir: data/shuffled
+    root_dir: /Volumes/main/rohitkg/data/raw_data/lingua_train_data
+    sources:
+        fineweb_edu_10bt: 100.0
+    batch_size: 4
+    prefetch_size: 32
+    seq_len: 1024
+    n_views: 2
+    load_async: true
+    tokenizer:
+        name: bytes
 
 profiling:
   run: true
@@ -47,40 +50,26 @@ profiling:
 checkpoint:
   path: /Volumes/main/linyuan/checkpoints/lingua/llama_1B/
   dump:
-    every: 2500
+    every: 1000
     keep: 3
   eval:
-    every: 5000
-    keep: -1
+    every: 1000
+    keep: 3
 
 logging:
-  freq: 1
+    freq: 10
 
-# async_eval_gpus: 8
 # eval:
-#   harness:
-#     tasks:
-#       - hellaswag
-#       - task: boolq
-#         dataset_kwargs:
-#           trust_remote_code: true
-#       - piqa
-#       - task: social_iqa
-#         dataset_kwargs:
-#           trust_remote_code: true
-#       - winogrande
-#       - openbookqa
-#       - arc_easy
-#       - arc_challenge
-#       - race
-#       - commonsense_qa
-#       - copa
-#       # - coqa
-#       # - task: nq_open
-#       #   num_fewshot: 5
-#       # - triviaqa
-#   validation:
-#     max_steps: 1000
-#   generator:
-#     max_tokens: 16384
-#     dtype: bf16
+#     generator:
+#         max_tokens: 8192
+#         dtype: bf16
+#         temperature: 1.0
+#         top_p: 0.95
+#     harness:
+#         tasks:
+#             - hellaswag
+#             - piqa
+#             - task: nq_open
+#               num_fewshot: 5
+#     validation:
+#         max_steps: 100
