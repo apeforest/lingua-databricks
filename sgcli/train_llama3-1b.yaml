@@ -1,5 +1,5 @@
-experiment_name: lingua-sgc
-run_name: lingua-debug-run
+experiment_name: llama3-1b-sgc
+run_name: llama3-1b-train-run
 environment:
   env_variables:
     NCCL_DEBUG: "INFO"
@@ -13,8 +13,7 @@ max_retries: 0
 code_source:
   type: snapshot
   snapshot:
-    # git_branch: sgc
-    allow_uncommitted: true
+    git_branch: sgc
     repo_path: /Users/lin.yuan/work/lingua-databricks
 command: |-
   # Set launch path for torchrun
@@ -30,4 +29,4 @@ command: |-
     --node_rank=$NODE_RANK \
     --master_addr=$MASTER_ADDR \
     --master_port=$MASTER_PORT \
-    -m apps.main.train config=apps/main/configs/debug.yaml
+    -m apps.main.train config=apps/main/configs/llama_1B.yaml

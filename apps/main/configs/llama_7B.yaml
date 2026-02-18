@@ -1,9 +1,9 @@
 #python -m lingua.stool config=apps/main/configs/llama2_7B.yaml nodes=32 account=fair_amaia_cw_codegen qos=lowest
-# dump_dir: !!!CHANGE_THIS!!!
+dump_dir: /tmp/lingua_llama_7B
 name: "7b_baseline"
 steps: 100_000
-grad_acc_steps: 1
-probe_freq: 100
+grad_acc_steps: 4
+probe_freq: null
 
 seed: 777
 optim:
@@ -18,7 +18,7 @@ distributed:
   compile: true
   model_dtype: bf16
   matmul_allow_tf32: false
-  selective_activation_checkpointing: false
+  selective_activation_checkpointing: true
   tp_size: 1
 
 model:
@@ -30,17 +30,16 @@ model:
   multiple_of: 256
 
 data:
-  root_dir: data/shuffled
-  sources:
-    dclm_baseline_1.0: 1.0
-  batch_size: 2
-  prefetch_size: 1024
-  seq_len: 4096
-  n_views: 2
-  load_async: true
-  tokenizer:
-    name: tiktoken
-    path: tokenizers/cl_toplang_128k.tiktoken
+    root_dir: /Volumes/main/rohitkg/data/raw_data/lingua_train_data
+    sources:
+        fineweb_edu_10bt: 100.0
+    batch_size: 8
+    prefetch_size: 64
+    seq_len: 2048
+    n_views: 2
+    load_async: true
+    tokenizer:
+        name: bytes
 
 profiling:
   run: true
@@ -50,46 +49,47 @@ profiling:
   profile_steps: 4
 
 checkpoint:
+  path: /Volumes/main/linyuan/checkpoints/lingua/llama_7B/
   dump:
-    every: 10000
+    every: 100
     keep: -1
   eval:
-    every: 1000
+    every: 100
     keep: 3
 
 logging:
   freq: 1
 
-async_eval_gpus: 8
-eval:
-  dataset_dir: datasets/eval
-  harness:
-    tasks:
-      - hellaswag
-      - task: boolq
-        dataset_kwargs:
-          trust_remote_code: true
-      - piqa
-      - task: social_iqa
-        dataset_kwargs:
-          trust_remote_code: true
-      - winogrande
-      - openbookqa
-      - arc_easy
-      - arc_challenge
-      - race
-      - commonsense_qa
-      # - coqa
-      - copa
-      - mmlu
-      - mmlu_pro
-      # - task: nq_open
-      #   num_fewshot: 5
-      # - triviaqa
-      # - gsm8k
-      # - bbh
-  validation:
-    max_steps: 1000
-  generator:
-    max_tokens: 8192
-    dtype: bf16
+# async_eval_gpus: 8
+# eval:
+#   dataset_dir: datasets/eval
+#   harness:
+#     tasks:
+#       - hellaswag
+#       - task: boolq
+#         dataset_kwargs:
+#           trust_remote_code: true
+#       - piqa
+#       - task: social_iqa
+#         dataset_kwargs:
+#           trust_remote_code: true
+#       - winogrande
+#       - openbookqa
+#       - arc_easy
+#       - arc_challenge
+#       - race
+#       - commonsense_qa
+#       # - coqa
+#       - copa
+#       - mmlu
+#       - mmlu_pro
+#       # - task: nq_open
+#       #   num_fewshot: 5
+#       # - triviaqa
+#       # - gsm8k
+#       # - bbh
+#   validation:
+#     max_steps: 1000
+#   generator:
+#     max_tokens: 8192
+#     dtype: bf16
