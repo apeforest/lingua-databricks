@@ -13,7 +13,8 @@ max_retries: 0
 code_source:
   type: snapshot
   snapshot:
-    git_branch: sgc
+    # git_branch: sgc
+    allow_uncommitted: true
     repo_path: /Users/lin.yuan/work/lingua-databricks
 command: |-
   # Set launch path for torchrun
